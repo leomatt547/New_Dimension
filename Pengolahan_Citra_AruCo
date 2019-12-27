@@ -181,7 +181,7 @@ int main(int argv, char** argc)
 
     Mat distanceCoefficients;
 
-    //Proses kalibrasi kamera
+    //Proses kalibrasi kamera dan menjalankan program
     loadCameraCalibration(cameraMatrix, distanceCoefficients);
     startWebcamMonitoring(cameraMatrix, distanceCoefficients, arucoSquareDimension);
 
