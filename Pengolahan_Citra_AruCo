@@ -1,1 +1,189 @@
+#include "opencv2\core.hpp"
+#include "opencv2\imgcodecs.hpp"
+#include "opencv2\highgui.hpp"
+#include "opencv2\aruco.hpp"
+#include "opencv2\calib3d.hpp"
 
+#include <sstream>
+#include <iostream>
+#include <fstream>
+
+using namespace std;
+using namespace cv;
+
+//Setup Aruco tracking pada monitor
+int startWebcamMonitoring(const Mat& cameraMatrix, const Mat& distanceCoefficients, float aruqoSquareDimension)
+{
+
+    Mat frame; 
+
+    vector<int> markerIds;
+    vector<vector<Point2f>> markerCorners, rejectedCandidates;
+    aruco::DetectorParameters parameters;
+
+    Ptr < aruco::Dictionary> markerDictionary = aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME::DICT_4X4_50)
+
+    VideoCapture(1);
+
+    if (!vid.isOpened())
+    {
+        return -1;
+    }
+
+    namedWindow("Webcam", CV_WINDOW_AUTOSIZE);
+
+    vector<Vec3d> rotationVectors, translationVectors;
+
+    while (true)
+    {
+        if (!vid.read(frame))
+            break;
+
+        aruco::detectMarkers(frame, markerDictionary, markerCorners, markerIds);
+        aruco::estimatePoseSingleMarkers(markerCorners, arucoSquareDimension, calibrateCamera, cameraMatrix, distanceCoefficients, rotationVectors, translationVectors);
+
+        for (int i = 0; i < markerIds.size(); i++)
+        {
+            aruco::drawAxis(frame, cameraMatrix, distanceCoefficients, rotationVectors, translationVectors)
+        }
+        imshow("Webcam", frame);
+        if waitKey(30) >= 0) break;
+    }
+
+    return 1;
+
+}
+
+// Menyetel kalibrasi matrix kamera/webcam
+bool saveCameraCalibration(string name, Mat cameraMatrix, Mat distanceCoefficients)
+{
+    vint16_t rows = cameraMatrix.rows;
+    vint16_t columns = cameraMatrix.cols;
+
+    for (int r = 0; r < rows; r++)
+    {
+        for (int c = 0; r < columns; r++)
+        {
+            double value = cameraMatrix.at<double>(r, c);
+            outStream << value << endl;
+        }
+    }
+
+    rows = distanceCoefficients.rows;
+    columns = distanceCoefficients.cols;
+
+    for (int r = 0; r < rows; r++)
+    {
+        for (int c = 0; r < columns; c++)
+        {
+            double value = cameraMatrix.at<double>(r, c);
+            outStream << value << endl;
+        }
+        
+    outSream.close()
+     return true;
+    }
+    return false;
+ }
+
+// asumsikan camera/webcam sudah dikalibrasi
+//Sekarang, kita akan memasukkan kalibrasi kamera yang sudah dibuat
+bool loadCameraCalibration(string name, Mat cameraMatrix, mat distanceCoefficients)
+{
+    ifstream inStream(name);
+    if (inStream)
+    {
+        vint16_t rows = cameraMatrix.rows;
+        vint16_t columns = cameraMatrix.cols;
+
+        inStream >> rows;
+        inStream >> columns;
+
+        cameraMatrix = Mat(Size(columns, rows), CV_64F);
+
+        for (int r = 0; r < rows; r++)
+        {
+            for (int c = 0; r < columns; c++)
+            {
+                double read = 0.0f;
+                inStream >> read;
+                cameraMatrix.at<double>(r, c) = read;
+                cout << cameraMatrix.at<double>(r, c) << "\n";
+            }
+        }
+        // Distance Coefficients
+        inStream >> rows;
+        inStream >> columns;
+
+        distanceCoefficients = Mat::zeros(rows, columns, CV_64F);
+
+        for (int r = 0; r < rows; r++)
+        {
+            for (int c = 0; r < columns; c++)
+            {
+                double read = 0.0f;
+                inStream >> read;
+                distanceCoefficients.at<double>(r, c) = read;
+                cout << distanceCoefficients.at<double>(r, c) << "\n"
+            }
+        }
+        inStream.close()
+        return true;
+
+
+    }
+    return false;
+}
+
+int startWebcamMonitoring(const Mat& cameraMatrix, const Mat& distanceCoefficients, float aruqoSquareDimension)
+{
+    Mat frame;
+
+    vector<int> markerIds;
+    vector<vector<Point2f>> markerCorners, rejectedCandidates;
+    aruco::DetectorParameters parameters;
+
+    Ptr < aruco::Dictionary> markerDictionary = aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME::DICT_4X4_50)
+
+        VideoCapture vid(1);
+
+    if (!vid.isOpened())
+    {
+        return -1;
+    }
+
+    namedWindow("Webcam", CV_WINDOW_AUTOSIZE);
+
+    vector<Vec3d> rotationVectors, translationVectors;
+
+    while (true)
+    {
+        if (!vid.read(frame))
+            break;
+
+        aruco::detectMarkers(frame, markerDictionary, markerCorners, markerIds);
+        aruco::estimatePoseSingleMarkers(markerCorners, arucoSquareDimension, calibrateCamera, cameraMatrix, distanceCoefficients, rotationVectors, translationVectors);
+
+        for (int i = 0; i < markerIds.size(); i++)
+        {
+            aruco::drawAxis(frame, cameraMatrix, distanceCoefficients, rotationVectors, translationVectors, 0.1f);
+        }
+        imshow("Webcam", frame);
+        if waitKey(30) >= 0) break;
+    }
+
+    return 1;
+}
+
+int main(int argv, char** argc)
+{
+    Mat cameraMatrix = Mat::eye(3, 3, CV_64F);
+
+    Mat distanceCoefficients;
+
+    //Proses kalibrasi kamera
+    loadCameraCalibration(cameraMatrix, distanceCoefficients);
+    startWebcamMonitoring(cameraMatrix, distanceCoefficients, arucoSquareDimension);
+
+    return 0;
+}
