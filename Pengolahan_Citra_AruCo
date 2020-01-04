@@ -1,5 +1,6 @@
 #include "opencv2\core.hpp"
 #include "opencv2\imgcodecs.hpp"
+#include "opencv2\imgproc.hpp"
 #include "opencv2\highgui.hpp"
 #include "opencv2\aruco.hpp"
 #include "opencv2\calib3d.hpp"
@@ -7,13 +8,209 @@
 #include <sstream>
 #include <iostream>
 #include <fstream>
+#include <stdio.h>
 
 using namespace std;
 using namespace cv;
 
+//Deteksi lingkaran pada gambar
+int main(int argc, char** argv)
+{
+    Mat src, src_gray;
+
+    /// Membaca gambar
+    src = imread(argv[1], 1);
+
+    if (!src.data)
+    {
+        return -1;
+    }
+
+    /// Konversi ke warna abu-abu
+    cvtColor(src, src_gray, CV_BGR2GRAY);
+
+    /// Mengurangi noise supaya tidak salah deteksi gambar
+    GaussianBlur(src_gray, src_gray, Size(9, 9), 2, 2);
+
+    vector<Vec3f> circles;
+
+    /// Mengaplikasikan fungsi Hough untuk mendeteksi lingkaran
+    HoughCircles(src_gray, circles, CV_HOUGH_GRADIENT, 1, src_gray.rows / 8, 200, 100, 0, 0);
+
+    /// Menggambar lingkaran yang terdeteksi
+    for (size_t i = 0; i < circles.size(); i++)
+    {
+        Point center(cvRound(circles[i][0]), cvRound(circles[i][1]));
+        int radius = cvRound(circles[i][2]);
+        // Pusat Lingkaran
+        circle(src, center, 3, Scalar(0, 255, 0), -1, 8, 0);
+        // Garis luar lingkaran
+        circle(src, center, radius, Scalar(0, 0, 255), 3, 8, 0);
+    }
+
+    /// Menampilkan hasil
+    namedWindow("Hough Circle Transform Demo", CV_WINDOW_AUTOSIZE);
+    imshow("Hough Circle Transform Demo", src);
+
+    waitKey(0);
+    return 0;
+}
+
+//Mendeteksi warna
+int main(int argc, char** argv)
+{
+    Mat image = imread("Target Deteksi Objek ver. 1.0.1 (Aruco Kecil)-1,1");
+    namedWindow("image", CV_WINDOW_FREERATIO);
+    imshow("image", image);
+    waitKey(0);
+
+    //Mencari warna biru
+    Mat OutputImage;
+    inRange(image, Scalar(100, 10, 10), Scalar(255, 100, 100), OutputImage);
+
+    //Mencari warna hitam
+    Mat OutputImage2;
+    inRange(image, Scalar(0, 0, 0), Scalar(0, 0, 0), OutputImage2);
+
+    int x1, x2;
+    x1 = countNonZero(OutputImage);
+    x2 = countNonZero(OutputImage2);
+    if (x1> x2) {
+        cout << "Warna objek ditemukan";
+    } else {
+        cout << "warna objek tidak ditemukan";
+    }
+    
+    cout << x1 << "   " << x2;
+
+    namedWindow("Output", CV_WINDOW_FREERATIO);
+    imshow("Output", OutputImage);
+    waitKey(0);
+}
+
+//Setup Aruco tracking pada monitor
+int startWebcamMonitoring(const Mat& cameraMatrix, const Mat& distanceCoefficients, float aruqoSquareDimension)
+{
+
+    Mat frame; 
+
+    vector<int> markerIds;
+    vector<vector<Point2f>> markerCorners, rejectedCandidates;
+    aruco::DetectorParameters parameters;
+
+    Ptr < aruco::Dictionary> markerDictionary = aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME::DICT_4X4_50)
+
+    VideoCapture(1);
+
+    if (!vid.isOpened())
+    {
+        return -1;
+    }
+
+    namedWindow("Webcam", CV_WINDOW_AUTOSIZE);
+
+    vector<Vec3d> rotationVectors, translationVectors;
+
+    while (true)
+    {
+        if (!vid.read(frame))
+            break;
+
+        aruco::detectMarkers(frame, markerDictionary, markerCorners, markerIds);
+        aruco::estimatePoseSingleMarkers(markerCorners, arucoSquareDimension, calibrateCamera, cameraMatrix, distanceCoefficients, rotationVectors, translationVectors);
+
+        for (int i = 0; i < markerIds.size(); i++)
+        {
+            aruco::drawAxis(frame, cameraMatrix, distanceCoefficients, rotationVectors, translationVectors)
+        }
+        imshow("Webcam", frame);
+        if waitKey(30) >= 0) break;
+    }
+
+    return 1;
+
+}
+
+// Menyetel kalibrasi matrix kamera/webcam
+bool saveCameraCalibration(string name, Mat cameraMatrix, Mat distanceCoefficients)
+{
+    vint16_t rows = cameraMatrix.rows;
+    vint16_t columns = cameraMatrix.cols;
+
+    for (int r = 0; r < rows; r++)
+    {
+        for (int c = 0; r < columns; r++)
+        {
+            double value = cameraMatrix.at<double>(r, c);
+            outStream << value << endl;
+        }
+    }
+
+    rows = distanceCoefficients.rows;
+    columns = distanceCoefficients.cols;
+
+    for (int r = 0; r < rows; r++)
+    {
+        for (int c = 0; r < columns; c++)
+        {
+            double value = cameraMatrix.at<double>(r, c);
+            outStream << value << endl;
+        }
+        
+    outSream.close()
+     return true;
+    }
+    return false;
+ }
 
 //asumsikan camera/webcam sudah dikalibrasi
 //Sekarang, kita akan memasukkan kalibrasi kamera yang sudah dibuat
+bool loadCameraCalibration(string name, Mat cameraMatrix, mat distanceCoefficients)
+{
+    ifstream inStream(name);
+    if (inStream)
+    {
+        vint16_t rows = cameraMatrix.rows;
+        vint16_t columns = cameraMatrix.cols;
+
+        inStream >> rows;
+        inStream >> columns;
+
+        cameraMatrix = Mat(Size(columns, rows), CV_64F);
+
+        for (int r = 0; r < rows; r++)
+        {
+            for (int c = 0; r < columns; c++)
+            {
+                double read = 0.0f;
+                inStream >> read;
+                cameraMatrix.at<double>(r, c) = read;
+                cout << cameraMatrix.at<double>(r, c) << "\n";
+            }
+        }
+        // Distance Coefficients
+        inStream >> rows;
+        inStream >> columns;
+
+        distanceCoefficients = Mat::zeros(rows, columns, CV_64F);
+
+        for (int r = 0; r < rows; r++)
+        {
+            for (int c = 0; r < columns; c++)
+            {
+                double read = 0.0f;
+                inStream >> read;
+                distanceCoefficients.at<double>(r, c) = read;
+                cout << distanceCoefficients.at<double>(r, c) << "\n"
+            }
+        }
+        inStream.close()
+        return true;
+
+
+    }
+    return false;
+}
 
 int startWebcamMonitoring(const Mat& cameraMatrix, const Mat& distanceCoefficients, float aruqoSquareDimension)
 {
@@ -61,7 +258,7 @@ int main(int argv, char** argc)
 
     Mat distanceCoefficients;
 
-    //Proses kalibrasi kamera dan menjalankan program
+    //Proses kalibrasi kamera
     loadCameraCalibration(cameraMatrix, distanceCoefficients);
     startWebcamMonitoring(cameraMatrix, distanceCoefficients, arucoSquareDimension);
 
